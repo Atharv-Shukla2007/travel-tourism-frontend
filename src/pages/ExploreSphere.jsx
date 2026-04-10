@@ -1,7 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { monuments } from "@/data/monuments.js";
-import { initialEvents } from "@/data/events.js";
-import { experts } from "@/data/experts.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import MonumentCard from "@/components/MonumentCard.jsx";
 import EventCard from "@/components/EventCard.jsx";
@@ -9,6 +7,7 @@ import ExpertCard from "@/components/ExpertCard.jsx";
 import Scanner from "@/components/Scanner.jsx";
 import EventForm from "@/components/EventForm.jsx";
 import { Search } from "lucide-react";
+import axios from "axios";
 
 const ExploreSphere = () => {
   const { user } = useAuth();
@@ -16,7 +15,9 @@ const ExploreSphere = () => {
   const [typeFilter, setTypeFilter] = useState("All");
   const [stateFilter, setStateFilter] = useState("All");
   const [eventCategory, setEventCategory] = useState("all");
-  const [events, setEvents] = useState(initialEvents);
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [experts, setExperts] = useState([]);
+  const [events, setEvents] = useState([]);
 
   const types = ["All", ...new Set(monuments.map((m) => m.type))];
   const states = ["All", ...new Set(monuments.map((m) => m.state))];
@@ -27,6 +28,61 @@ const ExploreSphere = () => {
     const matchState = stateFilter === "All" || m.state === stateFilter;
     return matchSearch && matchType && matchState;
   });
+
+  const handleToggle = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.put(
+        "http://localhost:5000/api/experts/toggle",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setIsAvailable(res.data.isAvailable);
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get("http://localhost:5000/api/me", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setIsAvailable(res.data.isAvailable);
+    };
+
+    fetchStatus();
+  }, []);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const res = await axios.get("http://localhost:5000/api/events");
+      setEvents(res.data);
+    };
+
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    const fetchExperts = async () => {
+      const res = await axios.get("http://localhost:5000/api/experts");
+      setExperts(res.data);
+    };
+
+    fetchExperts();
+  }, []);
 
   const filteredEvents = eventCategory === "all" ? events : events.filter((e) => e.category === eventCategory);
 
@@ -65,7 +121,7 @@ const ExploreSphere = () => {
           <div className="flex items-start justify-between mb-6">
             <div><p className="label-text">Events</p><h2 className="text-2xl font-semibold tracking-tight text-foreground mt-1">Tourism Events</h2></div>
           </div>
-          {user?.role === "expert" && <div className="mb-6"><EventForm onSubmit={(event) => setEvents((prev) => [...prev, event])} /></div>}
+          {user?.role === "expert" && <div className="mb-6"><EventForm onSuccess={(event) => setEvents((prev) => [...prev, event])} /></div>}
           <div className="flex gap-2 mb-6">
             {["all", "ongoing", "upcoming", "past"].map((cat) => (
               <button key={cat} onClick={() => setEventCategory(cat)}
@@ -86,6 +142,16 @@ const ExploreSphere = () => {
         <section>
           <p className="label-text">Guides</p>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground mt-1 mb-6">Local Experts</h2>
+          {user?.role === "expert" && (
+            <div className="mb-4">
+              <button
+                onClick={handleToggle}
+                className="px-4 py-2 rounded-xl bg-primary text-white"
+              >
+                {isAvailable ? "Go Offline" : "Go Online"}
+              </button>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {experts.map((ex) => <ExpertCard key={ex.id} expert={ex} />)}
           </div>

@@ -1,17 +1,47 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import axios from 'axios'
 
 const EventForm = ({ onSubmit }) => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", location: "", date: "", description: "", category: "upcoming" });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit({ ...form, id: `e-${Date.now()}`, image: "" });
-    setForm({ title: "", location: "", date: "", description: "", category: "upcoming" });
-    setOpen(false);
-    toast.success("Event created successfully");
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.post(
+        "http://localhost:5000/api/events",
+        form,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      // 🔥 update UI
+      onSubmit(res.data);
+
+      setForm({
+        title: "",
+        location: "",
+        date: "",
+        description: "",
+        category: "upcoming"
+      });
+
+      setOpen(false);
+
+      toast.success("Event created successfully");
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to create event");
+    }
   };
 
   if (!open) {
@@ -24,7 +54,7 @@ const EventForm = ({ onSubmit }) => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl card-shadow bg-background p-5 space-y-3 animate-scale-in">
+    <form onSuccess={handleSubmit} className="rounded-2xl card-shadow bg-background p-5 space-y-3 animate-scale-in">
       <h3 className="label-text">New Event</h3>
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" required
         className="w-full px-4 py-2.5 rounded-xl bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none" />

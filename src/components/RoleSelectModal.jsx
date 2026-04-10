@@ -2,20 +2,62 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { User, BookOpen } from "lucide-react";
+import axios from "axios";
 
 const RoleSelectModal = () => {
   const [name, setName] = useState("");
-  const [role, setRole] = useState("user");
+  const [role, setRole] = useState("traveller");
   const [isSignUp, setIsSignUp] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    signIn(name.trim(), role);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!name.trim()) return;
+
+  try {
+    let res;
+
+    if (isSignUp) {
+      // 👉 REGISTER
+      res = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        {
+          name: name.trim(),
+          role: role
+        }
+      );
+    } else {
+      // 👉 LOGIN
+      res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        {
+          name: name.trim()
+        }
+      );
+    }
+
+    console.log("RESPONSE 👉", res.data);
+
+    // store data
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify(res.data.user));
+
+    signIn(res.data.user.name, res.data.user.role);
+
     navigate("/home");
-  };
+
+  } catch (error) {
+    console.error(error);
+
+    if (error.response?.data?.msg) {
+      alert(error.response.data.msg);
+    } else {
+      alert("Something went wrong");
+    }
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm animate-fade-in">
@@ -35,9 +77,9 @@ const RoleSelectModal = () => {
           <div>
             <label className="label-text">Choose your role</label>
             <div className="mt-1.5 flex p-1 bg-secondary rounded-xl">
-              <button type="button" onClick={() => setRole("user")}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${role === "user" ? "bg-background card-shadow text-foreground" : "text-muted-foreground"}`}>
-                <User className="w-4 h-4" />Traveler
+              <button type="button" onClick={() => setRole("traveller")}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${role === "traveller" ? "bg-background card-shadow text-foreground" : "text-muted-foreground"}`}>
+                <User className="w-4 h-4" />Traveller
               </button>
               <button type="button" onClick={() => setRole("expert")}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${role === "expert" ? "bg-background card-shadow text-foreground" : "text-muted-foreground"}`}>
@@ -45,7 +87,7 @@ const RoleSelectModal = () => {
               </button>
             </div>
           </div>
-          <button type="submit" className="w-full py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 active:scale-95 transition-all">
+          <button type="submit" onClick={handleSubmit} className="w-full py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 active:scale-95 transition-all">
             {isSignUp ? "Create Account" : "Sign In"}
           </button>
         </form>

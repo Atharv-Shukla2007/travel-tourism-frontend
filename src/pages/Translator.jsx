@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
+import axios from "axios";
 
 const mockTranslations = {
   "hello": { Hindi: "नमस्ते", Marathi: "नमस्कार", Tamil: "வணக்கம்", French: "Bonjour", Spanish: "Hola", English: "Hello" },
@@ -9,20 +10,40 @@ const mockTranslations = {
   "good morning": { Hindi: "सुप्रभात", Marathi: "सुप्रभात", Tamil: "காலை வணக்கம்", French: "Bonjour", Spanish: "Buenos días", English: "Good morning" },
 };
 
-const languages = ["Hindi", "English", "Marathi", "Tamil", "French", "Spanish"];
+const languages = [{
+  name: "Hindi",
+  code: "hi"
+}, {  
+  name: "Marathi",
+  code: "mr"
+}, {
+  name: "English",
+  code: "en"
+}, {
+}];
 
 const Translator = () => {
   const [input, setInput] = useState("");
-  const [targetLang, setTargetLang] = useState("Hindi");
+  const [targetLang, setTargetLang] = useState("hi");
   const [output, setOutput] = useState("");
 
-  const handleTranslate = () => {
-    const key = input.toLowerCase().trim();
-    const translation = mockTranslations[key];
-    if (translation && translation[targetLang]) {
-      setOutput(translation[targetLang]);
-    } else {
-      setOutput(`[Mock] "${input}" → ${targetLang} translation`);
+  const handleTranslate = async () => {
+    if (!input.trim()) return;
+
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/translate",
+        {
+          text: input,
+          targetLang: targetLang
+        }
+      );
+
+      setOutput(res.data.translatedText);
+
+    } catch (error) {
+      console.error(error);
+      setOutput("Translation failed ❌");
     }
   };
 
@@ -43,7 +64,11 @@ const Translator = () => {
               <label className="label-text">Translate to</label>
               <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}
                 className="mt-1.5 w-full px-4 py-3 rounded-xl bg-secondary text-sm text-foreground focus:outline-none">
-                {languages.map((l) => <option key={l}>{l}</option>)}
+                {languages.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.name}
+                  </option>
+                ))}
               </select>
             </div>
             <button onClick={handleTranslate} disabled={!input.trim()}

@@ -8,17 +8,20 @@ const ExpertCard = ({ expert }) => {
   const { createBooking, bookings } = useBooking();
 
   const alreadyBooked = bookings.some(
-    (b) => b.expertId === expert.id && b.userName === user?.name
+    (b) => b.expertId === expert._id && b.userName === user?.name
   );
 
   const handleBook = () => {
     if (!user) return;
     createBooking({
       userName: user.name,
-      expertId: expert.id,
+      expertId: expert._id,
       expertName: expert.name,
       location: expert.location,
-      date: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long" }),
+      date: new Date().toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long"
+      }),
     });
     toast.success(`Booking request sent to ${expert.name}`);
   };
@@ -30,7 +33,7 @@ const ExpertCard = ({ expert }) => {
           <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-lg font-semibold text-foreground">
             {expert.name.split(" ").map(n => n[0]).join("")}
           </div>
-          <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${expert.status === "available" ? "bg-emerald" : "bg-muted-foreground"}`} />
+          <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${expert.isAvailable ? "bg-emerald" : "bg-muted-foreground"}`} />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-semibold tracking-tight text-foreground">{expert.name}</h3>
@@ -47,11 +50,11 @@ const ExpertCard = ({ expert }) => {
           <span key={lang} className="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">{lang}</span>
         ))}
       </div>
-      {user?.role === "user" && (
+      {user?.role === "traveller" && (
         <div className="mt-4 flex gap-2">
-          <button onClick={handleBook} disabled={alreadyBooked || expert.status === "busy"}
+          <button onClick={handleBook} disabled={alreadyBooked || !expert.isAvailable}
             className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-            {alreadyBooked ? "Request Sent" : expert.status === "busy" ? "Busy" : "Book Expert"}
+            {alreadyBooked ? "Request Sent" : !expert.isAvailable ? "Offline":"Book Expert"}
           </button>
         </div>
       )}

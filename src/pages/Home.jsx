@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { Link } from "react-router-dom";
-import { monuments } from "@/data/monuments.js";
 import { initialEvents } from "@/data/events.js";
 import MonumentCard from "@/components/MonumentCard.jsx";
 import EventCard from "@/components/EventCard.jsx";
@@ -9,15 +8,32 @@ import hero1 from "@/assets/hero-1.jpg";
 import hero2 from "@/assets/hero-2.jpg";
 import hero3 from "@/assets/hero-3.jpg";
 import { ArrowRight } from "lucide-react";
+import axios from "axios";
 
 const heroSlides = [hero1, hero2, hero3];
+
 
 const Home = () => {
   const { user } = useAuth();
   const [current, setCurrent] = useState(0);
+  const [monuments, setMonuments] = useState([]);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrent((p) => (p + 1) % heroSlides.length), 4000);
+    const timer = setInterval(() => 
+      setCurrent((p) => (p + 1) % heroSlides.length), 4000
+    );
+
+    const fetchMonuments = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/monuments");
+        setMonuments(res.data);
+      } catch (error) {
+        console.error("MONUMENT ERROR ❌", error);
+      }
+    };
+
+    fetchMonuments();
+
     return () => clearInterval(timer);
   }, []);
 
@@ -33,8 +49,8 @@ const Home = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/20 to-background" />
         <div className="absolute inset-0 flex items-end">
           <div className="max-w-7xl mx-auto w-full px-4 pb-8">
-            <p className="label-text text-primary-foreground/60 mb-2">Welcome back</p>
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-primary-foreground">{user?.name || "Explorer"}</h1>
+            <p className="label-text text-primary-foreground/60 mb-2 text-black">Welcome back</p>
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-primary-foreground text-black">{user?.name || "Explorer"}</h1>
           </div>
         </div>
       </div>
@@ -48,7 +64,7 @@ const Home = () => {
             <Link to="/explore" className="flex items-center gap-1 text-sm font-medium text-accent hover:underline">View all <ArrowRight className="w-4 h-4" /></Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredMonuments.map((m) => <MonumentCard key={m.id} monument={m} />)}
+            {featuredMonuments.map((m) => <MonumentCard key={m._id} monument={m} />)}
           </div>
         </section>
         <section>
